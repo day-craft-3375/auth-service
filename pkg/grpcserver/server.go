@@ -1,12 +1,9 @@
 package grpcserver
 
 import (
-	"context"
-	"errors"
-	"log"
 	"net"
+	"time"
 
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
@@ -14,26 +11,20 @@ const (
 	_defaultAddr = ":50051"
 )
 
+// GRPCServer GRPC сервер
 type GRPCServer struct {
-	Server *grpc.Server
+	server *grpc.Server
 
-	ctx context.Context
-	eg  *errgroup.Group
-
-	notify  chan error
 	address string
+	log     Logger
 }
 
-func New(opts ...Option) *GRPCServer {
-	group, ctx := errgroup.WithContext(context.Background())
-	group.SetLimit(1) // запуск только в одной горитине
-
+// New создает новый GRPC сервер
+func New(log Logger, opts ...Option) *GRPCServer {
 	s := &GRPCServer{
-		ctx:     ctx,
-		eg:      group,
-		Server:  grpc.NewServer(),
-		notify:  make(chan error),
+		server:  grpc.NewServer(),
 		address: _defaultAddr,
+		log:     log,
 	}
 
 	for _, opt := range opts {
@@ -43,50 +34,41 @@ func New(opts ...Option) *GRPCServer {
 	return s
 }
 
-func (s *GRPCServer) Run() {
-	s.eg.Go(func() error {
-		var lc net.ListenConfig
-
-		ln, err := lc.Listen(s.ctx, "tcp", s.address)
-		if err != nil {
-			s.notify <- err
-
-			close(s.notify)
-
-			return err
-		}
-
-		if err := s.Server.Serve(ln); err != nil {
-			s.notify <- err
-
-			close(s.notify)
-
-			return err
-		}
-
-		return nil
-	})
-
-	log.Println("grpc server - Started")
+// Server возвращает grpc.Server
+func (s *GRPCServer) Server() *grpc.Server {
+	return s.server
 }
 
-func (s *GRPCServer) Notify() <-chan error {
-	return s.notify
-}
-
-func (s *GRPCServer) Shutdown() error {
-	var errs []error
-
-	s.Server.GracefulStop()
-
-	// дожидается завершения всех горрутин
-	err := s.eg.Wait()
-	if err != nil && !errors.Is(err, context.Canceled) {
-		log.Println("grpc server:", err)
-
-		errs = append(errs, err)
+// Run запускает GRPC сервер
+func (s *GRPCServer) Run() error {
+	lis, err := net.Listen("tcp", s.address)
+	if err != nil {
+		s.log.Error("не удалось запустить GRPC сервер", err, "address", s.address)
+		return err
 	}
 
-	log.Println("grpc server - Shutdown")
-	return errors.Join(errs...)
+	s.log.Info("GRPC сервер запущен", "address", s.address)
+	if err := s.server.Serve(lis); err != nil {
+		s.log.Error("ошибка GRPC сервера", err, "address", s.address)
+		return err
+	}
+	return nil
+}
+
+// Shutdown останавливает GRPC сервер
+func (s *GRPCServer) Shutdown() {
+	done := make(chan struct{})
+
+	go func() {
+		s.server.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		s.log.Info("GRPC сервер остановлен", "address", s.address)
+	case <-time.After(10 * time.Second):
+		s.server.Stop()
+		s.log.Info("GRPC сервер принудительно остановлен", "address", s.address)
+	}
 }

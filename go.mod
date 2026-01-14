@@ -3,15 +3,25 @@ module github.com/day-craft-3375/auth-service
 go 1.25.5
 
 require (
+	github.com/Masterminds/squirrel v1.5.4
 	github.com/caarlos0/env/v11 v11.3.1
-	golang.org/x/sync v0.18.0
+	github.com/day-craft-3375/protos v0.0.0-20260109061225-609175c0608b
+	github.com/google/uuid v1.6.0
+	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jmoiron/sqlx v1.4.0
+	github.com/joho/godotenv v1.5.1
+	golang.org/x/crypto v0.44.0
 	google.golang.org/grpc v1.78.0
 )
 
 require (
-	github.com/day-craft-3375/protos v0.0.0-20260109061225-609175c0608b // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
+	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect

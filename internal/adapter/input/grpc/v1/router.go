@@ -3,7 +3,7 @@ package v1
 import (
 	"context"
 
-	auth_usecase "github.com/day-craft-3375/auth-service/internal/usecase/auth"
+	"github.com/day-craft-3375/auth-service/internal/usecase/auth"
 	authv1 "github.com/day-craft-3375/protos/gen/go/auth/v1"
 	"google.golang.org/grpc"
 )
@@ -11,22 +11,22 @@ import (
 type V1 struct {
 	authv1.UnimplementedAuthServiceServer
 
-	registerUserUseCase *auth_usecase.RegisterUserUseCase
+	authUseCase *auth.AuthUseCase
 }
 
 func NewAuthRoutes(
 	s *grpc.Server,
-	registerUserUseCase *auth_usecase.RegisterUserUseCase,
+	authUseCase *auth.AuthUseCase,
 ) {
 	r := &V1{
-		registerUserUseCase: registerUserUseCase,
+		authUseCase: authUseCase,
 	}
 
 	authv1.RegisterAuthServiceServer(s, r)
 }
 
 func (r *V1) RegisterUser(ctx context.Context, req *authv1.RegisterUserRequest) (*authv1.RegisterUserResponse, error) {
-	out, _ := r.registerUserUseCase.Execute(ctx, auth_usecase.NewRegisterUserInput(
+	out, _ := r.authUseCase.RegisterUser(ctx, auth.NewRegisterUserInput(
 		req.GetEmail(),
 		req.GetPassword(),
 	))
