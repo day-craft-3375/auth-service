@@ -17,6 +17,18 @@ type AppContextManager interface {
 	CreateContext(parent context.Context) (AppContext, AppContextCancelFunc)
 }
 
+type Transaction interface {
+	Start() error
+	Commit() error
+	Rollback() error
+	Tx() *sqlx.Tx
+}
+
+type TransactionManager interface {
+	CreateTransaction() Transaction
+	Close() error
+}
+
 type Logger interface {
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)

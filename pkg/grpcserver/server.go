@@ -1,6 +1,7 @@
 package grpcserver
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -16,15 +17,13 @@ type GRPCServer struct {
 	server *grpc.Server
 
 	address string
-	log     Logger
 }
 
 // New создает новый GRPC сервер
-func New(log Logger, opts ...Option) *GRPCServer {
+func New(opts ...Option) *GRPCServer {
 	s := &GRPCServer{
 		server:  grpc.NewServer(),
 		address: _defaultAddr,
-		log:     log,
 	}
 
 	for _, opt := range opts {
@@ -39,19 +38,22 @@ func (s *GRPCServer) Server() *grpc.Server {
 	return s.server
 }
 
+// Address возвращает адрес GRPC сервера
+func (s *GRPCServer) Address() string {
+	return s.address
+}
+
 // Run запускает GRPC сервер
 func (s *GRPCServer) Run() error {
 	lis, err := net.Listen("tcp", s.address)
 	if err != nil {
-		s.log.Error("не удалось запустить GRPC сервер", err, "address", s.address)
-		return err
+		return fmt.Errorf("не удалось создать tcp-слушатель: %w", err)
 	}
 
-	s.log.Info("GRPC сервер запущен", "address", s.address)
 	if err := s.server.Serve(lis); err != nil {
-		s.log.Error("ошибка GRPC сервера", err, "address", s.address)
-		return err
+		return fmt.Errorf("не удалось запустить GRPC сервер: %w", err)
 	}
+
 	return nil
 }
 
@@ -66,9 +68,7 @@ func (s *GRPCServer) Shutdown() {
 
 	select {
 	case <-done:
-		s.log.Info("GRPC сервер остановлен", "address", s.address)
 	case <-time.After(10 * time.Second):
 		s.server.Stop()
-		s.log.Info("GRPC сервер принудительно остановлен", "address", s.address)
 	}
 }
